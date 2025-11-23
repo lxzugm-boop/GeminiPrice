@@ -219,11 +219,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
+
+    
     // --- НАСТРОЙКИ ---
-    // ID вашей таблицы
-    const SHEET_ID = '1-xKV07tBsw24Lor4EEIOq2CvL922Ek-uQJvCROYPCEA';
-    const GID = '0'; // Обычно 0 для первого листа
-    const CSV_URL = `https://docs.google.com/spreadsheets/d/${264825056}/export?format=csv&id=${264825056}&gid=${GID}`;
+   // 1. ID самого файла (буквы и цифры)
+const SHEET_ID = '1-xKV07tBsw24Lor4EEIOq2CvL922Ek-uQJvCROYPCEA';
+
+// 2. ID конкретного листа (GID)
+// Если нужен первый лист -> ставьте '0'
+// Если нужен тот лист, который не грузился -> ставьте '264825056'
+const GID = '264825056'; 
+
+// 3. Правильная ссылка (используем переменную SHEET_ID, а не число)
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
 
     // Глобальные переменные для логики
     let allRowsData = []; // Храним данные в памяти
