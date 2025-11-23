@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width,initial-scale=1" name="viewport" />
+    <title>Прайс Geizer (Online)</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111;
+            --muted: #555;
+            --line: #e5e7eb;
+            --accent: #0d9488;
+            --thead: #f7fafc;
+            --hover: #fff9c4;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+        
+        /* --- Header & Controls --- */
+        .header {
+            position: sticky; top: 0; z-index: 200;
+            display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+            padding: 10px 14px; background: rgba(255,255,255,0.95);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .header .title { font-weight: 800; font-size: 18px; margin-right: auto; white-space: nowrap; }
+        .header input[type="search"] {
+            flex: 1; min-width: 200px; max-width: 500px; padding: 8px 12px;
+            border: 1px solid #b7e4c7; border-radius: 6px; background: #f0fdf4;
+            outline: none; font-size: 15px; transition: 0.2s;
+        }
+        .header input[type="search"]:focus { border-color: #16a34a; background: #fff; }
+        
+        .header .group { display: flex; gap: 0.4rem; align-items: center; }
+        .btn {
+            padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+            background: #fff; cursor: pointer; font-weight: 500; transition: 0.2s;
+        }
+        .btn:hover { background: #f8fafc; border-color: #94a3b8; }
+        .btn.primary { background: #16a34a; color: #fff; border-color: #15803d; }
+        .btn.primary:hover { background: #15803d; }
+        .input-small { width: 60px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; }
+
+        /* --- Container & Table --- */
+        .container { padding: 16px; max-width: 1400px; margin: 0 auto; }
+        h2 { margin: 10px 0; font-size: 16px; color: var(--muted); font-weight: normal; }
+        h2 a { color: #0369a1; text-decoration: none; font-weight: 600; }
+
+        .tblwrap {
+            border: 1px solid var(--line); border-radius: 8px;
+            background: #fff; overflow-x: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            min-height: 200px; /* Чтобы спиннер было видно */
+            position: relative;
+        }
+
+        table.price { width: 100%; border-collapse: collapse; min-width: 900px; }
+        
+        thead th {
+            position: sticky; top: 0; z-index: 10;
+            background: var(--thead); color: #475569;
+            padding: 12px 10px; text-align: left;
+            border-bottom: 2px solid #e2e8f0; font-weight: 700;
+            text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;
+        }
+        
+        tbody td {
+            padding: 8px 10px; border-bottom: 1px solid var(--line);
+            vertical-align: middle;
+        }
+        tbody tr:hover { background: var(--hover); }
+
+        /* --- Column Specifics --- */
+        .imgcell { width: 100px; text-align: center; }
+        .imgcell img {
+            width: 60px; height: 60px; object-fit: contain;
+            border-radius: 4px; cursor: zoom-in;
+            background: #fff; border: 1px solid #f1f5f9;
+        }
+        
+        .price-cell { font-weight: 700; font-size: 15px; white-space: nowrap; }
+        .promo-cell { color: #dc2626; font-weight: 700; white-space: nowrap; }
+        
+        /* Стили для Акций */
+        tr.has-promo td.price-cell { text-decoration: line-through; color: #94a3b8; font-size: 13px; font-weight: normal; }
+        tr.has-promo td.promo-cell { background: #fef2f2; position: relative; }
+        tr.has-promo td.promo-cell::after {
+            content: '%'; position: absolute; top: 2px; right: 2px;
+            font-size: 10px; color: #dc2626; opacity: 0.5;
+        }
+
+        /* Подкатегории */
+        tr.subcat td {
+            background: #fffbeb; color: #92400e;
+            font-weight: 700; text-transform: uppercase;
+            padding: 15px 10px; border-top: 2px solid #fcd34d;
+        }
+
+        /* Ссылка */
+        a.urla {
+            display: inline-block; padding: 4px 10px;
+            border: 1px solid #e2e8f0; border-radius: 20px;
+            color: #334155; text-decoration: none; font-size: 12px;
+            transition: 0.2s;
+        }
+        a.urla:hover { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+
+        /* --- Loader --- */
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 10px; color: #64748b; font-weight: 500;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #e2e8f0;
+            border-top-color: #16a34a; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Zoom Overlay --- */
+        .zoom-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .zoom-overlay img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); background: #fff; }
+        .zoom-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.2); color: #fff; border: none;
+            font-size: 30px; padding: 10px 15px; cursor: pointer; border-radius: 50%;
+            transition: 0.2s;
+        }
+        .zoom-nav:hover { background: rgba(255,255,255,0.4); }
+        .zoom-prev { left: 20px; } .zoom-next { right: 20px; }
+        .close-zoom { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; }
+
+        /* Toggle Switch Style for "Только акции" */
+        .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; user-select: none; }
+        .toggle-label input { accent-color: #f59e0b; width: 16px; height: 16px; }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: stretch; }
+            .header input[type="search"] { max-width: 100%; }
+            .imgcell img { width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">ПРАЙС-ЛИСТ Гейзер</div>
+    <input id="q" placeholder="🔍 Поиск по названию или артикулу..." type="search" />
+    
+    <div class="group">
+        <label for="discount">Скидка %:</label>
+        <input class="input-small" id="discount" type="number" min="0" max="99" placeholder="0" />
+        <button class="btn primary" id="applyDiscount">Ок</button>
+        <button class="btn" id="resetDiscount">Сброс</button>
+    </div>
+    
+    <div class="group">
+        <button class="btn" id="downloadXls">Excel</button>
+        <button class="btn" id="downloadPdf">PDF</button>
+    </div>
+    
+    <div class="group">
+        <label class="toggle-label">
+            <input id="onlyPromo" type="checkbox" /> Только акции
+        </label>
+    </div>
+</div>
+
+<div class="container">
+    <h2>
+        Тел: <a href="tel:+78126050055">+7 (812) 605-00-55</a> | 
+        <a href="http://www.geizer.com" target="_blank">www.geizer.com</a> | 
+        Email: <a href="mailto:zaa@geizer.com">zaa@geizer.com</a>
+    </h2>
+
+    <div class="tblwrap">
+        <div id="loader">
+            <div class="spinner"></div>
+            <span>Загрузка прайса...</span>
+        </div>
+
+        <table class="price" id="mainTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Артикул</th>
+                    <th>Наименование</th>
+                    <th>Описание</th>
+                    <th>Упак.</th>
+                    <th>Палет.</th>
+                    <th>Цена (руб)</th>
+                    <th>Акция</th>
+                    <th>Фото</th>
+                    <th>Инфо</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+    </div>
+    <footer style="margin-top: 20px; font-size: 12px; color: #999;">
+        Данные обновляются автоматически из облака.
+    </footer>
+</div>
+
+<div class="zoom-overlay" id="zoomOverlay">
+    <span class="close-zoom">&times;</span>
+    <button class="zoom-nav zoom-prev">❮</button>
+    <img src="" alt="Zoom" />
+    <button class="zoom-nav zoom-next">❯</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+    // --- НАСТРОЙКИ ---
+    // ID вашей таблицы
+    const SHEET_ID = '1-xKV07tBsw24Lor4EEIOq2CvL922Ek-uQJvCROYPCEA';
+    const GID = '0'; // Обычно 0 для первого листа
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&id=${SHEET_ID}&gid=${GID}`;
+
+    // Глобальные переменные для логики
+    let allRowsData = []; // Храним данные в памяти
+    let currentDiscount = 0;
+
+    // --- 1. ЗАГРУЗКА ДАННЫХ ---
+    async function loadData() {
+        try {
+            const response = await fetch(CSV_URL);
+            const text = await response.text();
+            
+            const rows = parseCSV(text);
+            // Удаляем первую строку (заголовки CSV), если она есть в выгрузке
+            // Если в вашей таблице 1-я строка это заголовки, раскомментируйте:
+            rows.shift(); 
+
+            renderTable(rows);
+            
+            // Убираем лоадер, показываем таблицу
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('mainTable').style.display = 'table';
+            
+            // Сохраняем копию для фильтрации
+            allRowsData = Array.from(document.querySelectorAll('#tableBody tr'));
+            
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loader').innerHTML = '<span style="color:red">Ошибка загрузки данных. Проверьте интернет.</span>';
+        }
+    }
+
+    // Простой CSV парсер
+    function parseCSV(str) {
+        const arr = [];
+        let quote = false;
+        let col = 0, row = 0;
+        for (let c = 0; c < str.length; c++) {
+            let cc = str[c], nc = str[c+1];
+            arr[row] = arr[row] || [];
+            arr[row][col] = arr[row][col] || '';
+            
+            if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+            if (cc == '"') { quote = !quote; continue; }
+            if (cc == ',' && !quote) { ++col; continue; }
+            if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+            if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+            if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+            arr[row][col] += cc;
+        }
+        return arr;
+    }
+
+    // --- 2. РЕНДЕРИНГ ТАБЛИЦЫ ---
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        let html = '';
+
+        data.forEach(row => {
+            // Пропускаем совсем пустые строки
+            if (row.length < 2 || (!row[0] && !row[1])) return;
+
+            const [art, name, desc, pack, pallet, price, promo, img, link] = row;
+
+            // Логика подкатегории: Нет артикула, но есть название -> это заголовок раздела
+            if (!art && name) {
+                html += `<tr class="subcat"><td colspan="9">${name}</td></tr>`;
+                return;
+            }
+
+            // Логика Акции
+            const isPromo = promo && promo.trim() !== '';
+            const rowClass = isPromo ? 'has-promo' : '';
+            
+            // Форматирование цен (чистим от пробелов, если они есть в CSV)
+            const cleanPrice = price ? price.replace(/\s/g, '') : '';
+            const cleanPromo = promo ? promo.replace(/\s/g, '') : '';
+
+            html += `<tr class="${rowClass}" data-base-price="${cleanPrice}" data-base-promo="${cleanPromo}">
+                <td>${art || ''}</td>
+                <td>${name || ''}</td>
+                <td><small>${desc || ''}</small></td>
+                <td style="text-align:center">${pack || ''}</td>
+                <td style="text-align:center; color:#999;">${pallet || ''}</td>
+                <td class="price-cell">${formatMoney(cleanPrice)}</td>
+                <td class="promo-cell">${isPromo ? formatMoney(cleanPromo) : ''}</td>
+                <td class="imgcell">
+                    ${img ? `<img src="${img}" loading="lazy" alt="Фото">` : ''}
+                </td>
+                <td style="text-align:center">
+                    ${link ? `<a class="urla" href="${link}" target="_blank">перейти</a>` : ''}
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function formatMoney(val) {
+        if (!val) return '';
+        const n = parseFloat(val.replace(',', '.'));
+        if (isNaN(n)) return val;
+        return new Intl.NumberFormat('ru-RU').format(n);
+    }
+
+    // --- 3. ИНТЕРАКТИВНОСТЬ (Скрипты поиска и скидок) ---
+    
+    function applyFilters() {
+        const q = document.getElementById('q').value.toLowerCase();
+        const onlyPromo = document.getElementById('onlyPromo').checked;
+        const tbody = document.getElementById('tableBody');
+        
+        // Сбрасываем отображение (работаем с DOM напрямую, так проще сохранить ссылки)
+        const rows = tbody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            // Всегда показываем подкатегории, если мы не в режиме жесткого поиска
+            // Но для лучшего UX при поиске заголовки можно скрывать, или оставлять.
+            // Здесь простая логика:
+            
+            if (row.classList.contains('subcat')) {
+                row.style.display = (q.length > 0 || onlyPromo) ? 'none' : ''; 
+                // Если хотите видеть категории при поиске - нужна сложная логика "есть ли видимые дети"
+                // В простом варианте скрываем категории при поиске
+                return; 
+            }
+
+            const text = row.textContent.toLowerCase();
+            const isPromo = row.classList.contains('has-promo');
+            
+            const matchesSearch = text.includes(q);
+            const matchesPromo = !onlyPromo || isPromo;
+
+            if (matchesSearch && matchesPromo) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function updatePrices() {
+        const rows = document.querySelectorAll('#tableBody tr:not(.subcat)');
+        
+        rows.forEach(row => {
+            const basePriceStr = row.dataset.basePrice;
+            const basePromoStr = row.dataset.basePromo;
+            
+            // Основная цена
+            if (basePriceStr) {
+                const base = parseFloat(basePriceStr.replace(',', '.'));
+                if (!isNaN(base)) {
+                    // Скидка применяется к базовой цене
+                    const discounted = Math.round(base * (1 - currentDiscount / 100));
+                    row.querySelector('.price-cell').textContent = formatMoney(discounted);
+                }
+            }
+            
+            // Акционная цена (обычно на акции скидка не действует, но если надо - раскомментируйте логику)
+            /* if (basePromoStr) {
+               // Логика для промо цен (оставляем как есть или тоже скидываем)
+            } 
+            */
+        });
+    }
+
+    // Слушатели событий
+    document.getElementById('q').addEventListener('input', applyFilters);
+    document.getElementById('onlyPromo').addEventListener('change', applyFilters);
+
+    document.getElementById('applyDiscount').addEventListener('click', () => {
+        const val = parseFloat(document.getElementById('discount').value);
+        currentDiscount = isNaN(val) ? 0 : Math.max(0, Math.min(99, val));
+        updatePrices();
+    });
+
+    document.getElementById('resetDiscount').addEventListener('click', () => {
+        document.getElementById('discount').value = '';
+        currentDiscount = 0;
+        updatePrices();
+    });
+
+    // --- 4. EXCEL EXPORT ---
+    document.getElementById('downloadXls').addEventListener('click', () => {
+        const table = document.getElementById('mainTable');
+        const wb = XLSX.utils.table_to_book(table, {sheet: "Price"});
+        XLSX.writeFile(wb, 'Geizer_Price.xlsx');
+    });
+
+    // --- 5. PDF (Простой window.print) ---
+    document.getElementById('downloadPdf').addEventListener('click', () => {
+        window.print();
+    });
+
+    // --- 6. ZOOM КАРТИНОК ---
+    const overlay = document.getElementById('zoomOverlay');
+    const overlayImg = overlay.querySelector('img');
+    let currentImgIndex = -1;
+    let visibleImages = []; // Массив видимых картинок для навигации
+
+    document.getElementById('tableBody').addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG') {
+            // Собираем все видимые картинки
+            visibleImages = Array.from(document.querySelectorAll('#tableBody tr:not([style*="display: none"]) .imgcell img'));
+            currentImgIndex = visibleImages.indexOf(e.target);
+            
+            if (currentImgIndex >= 0) {
+                showImage(currentImgIndex);
+                overlay.style.display = 'flex';
+            }
+        }
+    });
+
+    function showImage(index) {
+        if (index < 0 || index >= visibleImages.length) return;
+        overlayImg.src = visibleImages[index].src;
+        currentImgIndex = index;
+    }
+
+    overlay.querySelector('.close-zoom').onclick = () => overlay.style.display = 'none';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+    
+    overlay.querySelector('.zoom-next').onclick = (e) => {
+        e.stopPropagation();
+        showImage((currentImgIndex + 1) % visibleImages.length);
+    };
+    overlay.querySelector('.zoom-prev').onclick = (e) => {
+        e.stopPropagation();
+        showImage((currentImgIndex - 1 + visibleImages.length) % visibleImages.length);
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (overlay.style.display === 'flex') {
+            if (e.key === 'Escape') overlay.style.display = 'none';
+            if (e.key === 'ArrowRight') overlay.querySelector('.zoom-next').click();
+            if (e.key === 'ArrowLeft') overlay.querySelector('.zoom-prev').click();
+        }
+    });
+
+    // ЗАПУСК
+    loadData();
+
+</script>
+</body>
+</html>
